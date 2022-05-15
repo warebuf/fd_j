@@ -106,11 +106,11 @@ window.addEventListener('keydown', (event) => {
         switch(event.key) {
             case 'a':
                 chosen_piece = 'l';
-                state = 2;
+                state = 4;
                 break;
             case 'd':
                 chosen_piece = 'r';
-                state = 2;
+                state = 4;
                 break;
         }
     }
@@ -120,7 +120,7 @@ window.addEventListener('keydown', (event) => {
 
 function animate() {
     let a = window.requestAnimationFrame(animate);
-    if(state == 0) {
+    if(state == 0) { // load title screen
         c.fillStyle = 'black';
         c.fillRect(0,0, canvas.width, canvas.height);
         c.font = '13px monospace';
@@ -132,22 +132,32 @@ function animate() {
         c.fillText(slogan,(canvas.width/2) - (c.measureText(slogan).width/2),30 + canvas.height/2);
         c.fillText(pressanykey,(canvas.width/2) - (c.measureText(pressanykey).width/2),60 + canvas.height/2);
     }
-    else if(state == 1) {
+    else if(state == 1) { // load bots
         populate();
         state = 2;
     }
-    else if(state == 2) { // draw game state
+    else if(state == 2) { // draw first game state
         c.fillStyle = 'black';
         c.fillRect(0,0,canvas.width,canvas.height);
-        state = turn();
+        state = decision();
         drawPosition(); 
+        drawStats();
+        drawState();
+    }
+    //else if(state == 3) { // get user input, do nothing  
+    else if (state == 4) { // move
+        move();
+        state = drawPosition();
+    }
+    else if (state == 5) { // move graphically
+        state = drawPosition();
+    }
+    else if (state == 6) {
+        state = decision();
         drawStats();
         drawLogs();
         drawState();
     }
-    // else {} state == 3 // waiting for input
-    // state 4 = update everything in between, clear out the progress bars (do not call any draw functions in state 2)
-    // state 5 = findal update
      
 }
 
@@ -158,15 +168,19 @@ direction = new Array(demons.length).fill(0); // 0 means heading to 0, 1 means h
 alive = new Array(demons.length).fill(true); // 1 means alive, 0 means dead
 action = new Array(demons.length).fill(null); // null means no action, 'l' = left, 'r' = right, 'h' = head, 'b' = bottom
 team = new Array(demons.length).fill(0); 
-turn_count = 0;
 chosen_piece = null; // piece chosen for user input
 demons_turn = -1; // waiting for user input for this index
 logs = [];
 visual_position = new Array(demons.length).fill(0);
+visual_direction = new Array(demons.length).fill(0);
 
 animate();
 
 function drawStats() {
+
+    c.fillStyle = 'black';
+    c.fillRect(0,0,270,600);
+
     c.font = '13px monospace';
     c.fillStyle = 'white';
 
@@ -178,6 +192,10 @@ function drawStats() {
 }
 
 function drawLogs() {
+
+    c.fillStyle = 'black';
+    c.fillRect(0,600,270, canvas.height-600);
+
     c.font = '13px monospace';
     c.fillStyle = 'white';
 
@@ -209,6 +227,10 @@ function populate() {
 }
 
 function drawState() {
+
+    c.fillStyle = 'black';
+    c.fillRect(270,0,80,600);
+
     for(let i = 0; i< demons.length; i++) {    
         if(demons[i].h.health > 0) { c.fillStyle = 'green';}
         else { c.fillStyle = 'red';}
@@ -226,29 +248,58 @@ function drawState() {
 }
 
 function drawPosition() {
+    c.fillStyle = 'black';
+    c.fillRect(350,0, canvas.width-350, canvas.height);
     c.font = '13px monospace';
     c.fillStyle = 'white';
 
-    c.fillStyle = 'black';
-    c.fillRect(0,0, canvas.width, canvas.height);
-    c.font = '13px monospace';
-    c.fillStyle = 'white';
-    for(let i = 0; i< demons.length; i++) {    
+    for(let i = 0; i < demons.length; i++) {
+        if(visual_position[i] < position[i]) {visual_direction[i] = 1;}
+        else if(visual_position[i] > position[i]) {visual_direction[i] = 0;}
+    }
+
+    let in_pos = true;
+
+    for(let i = 0; i < demons.length; i++) {    
         let road = 'o' + "-".repeat(98) + 'x';
         if(alive[i]) {
-            let road_mod = road.substring(0, Math.round(position[i])) + (direction[i] ? '>' : '<') + road.substring(Math.round(position[i]) + 1);
-            c.fillText(road_mod, 350, 50 + i*70);
+            
+            console.log(i,visual_direction[i], visual_position[i], position[i], direction[i], "inpos", in_pos);
+
+            if(visual_position[i] == position[i]) {
+                let road_mod = road.substring(0, Math.round(position[i])) + (direction[i] ? '>' : '<') + road.substring(Math.round(position[i]) + 1);
+                c.fillText(road_mod, 350, 50 + i*70);
+            }
+            else {
+                in_pos=false;
+                if(visual_direction[i] == 0) {
+                    if(visual_position[i] - (demons[i].b.speed/100) < position[i]) {
+                        visual_position[i] = position[i];
+                    }
+                    else {
+                        visual_position[i] = visual_position[i] - (demons[i].b.speed/100);
+                    }
+                }
+                else { //direction[i] == 1
+                    if(visual_position[i] + (demons[i].b.speed/100) > position[i]) {
+                        visual_position[i] = position[i];
+                    }
+                    else {
+                        visual_position[i] = visual_position[i] + (demons[i].b.speed/100);
+                    }
+                }
+                let road_mod = road.substring(0, Math.round(visual_position[i])) + (direction[i] ? '>' : '<') + road.substring(Math.round(visual_position[i]) + 1);
+                c.fillText(road_mod, 350, 50 + i*70);
+            }
         }
     }
 
-    // have to record visual position and change it accordingly
+    if(in_pos==true) {return 6;}
+    else return 5;
 
 }
 
-function turn() {
-    console.log("Turn", turn_count);
-    turn_count = turn_count + 1;
-
+function move() {
     // calculate the closest demon to an action
     let lowest_multiple = Infinity;
     for(let j = 0; j < position.length; j++) {
@@ -260,7 +311,6 @@ function turn() {
     console.log("lowest multiple: ", lowest_multiple);
 
     // move all demons (the speed system), find demons with an action
-    const winner = new Array()
     for(let j = 0; j < position.length; j++) {
         if(alive[j] == false) {continue;}
         else if(direction[j] == 0) {position[j] = position[j] - (demons[j].b.speed * lowest_multiple);} // move backwards
@@ -268,9 +318,14 @@ function turn() {
 
         if(position[j]<0) {position[j]=0}; // some weird float glitch happens sometimes
 
-        if(( (position[j] == 0) && (direction[j] == 0) ) || ( (position[j] == 100) && (direction[j] == 1) )) {winner.push(j)} // add to action list
-
         console.log(j, "pos:", position[j], "dir:", direction[j]);
+    }
+}
+
+function decision() {
+    const winner = new Array()
+    for(let j = 0; j < demons.length; j++) {
+        if(( (position[j] == 0) && (direction[j] == 0) ) || ( (position[j] == 100) && (direction[j] == 1) )) {winner.push(j)} // add to action list
     }
 
     // go through winners, make actions, check if dead, & change direction
@@ -337,7 +392,7 @@ function turn() {
             direction[winner[j]] = 0;
         }
     }
-    return 2;
+    return 4;
 }
 
 
