@@ -1,6 +1,6 @@
 // TODO
 // position bar
-//
+
 
 // doppelganger
 let h0000000001 = ["Doppelganger", "h", 1, 1];
