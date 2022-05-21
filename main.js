@@ -123,14 +123,18 @@ function animate() {
     if(state == 0) { // load title screen
         c.fillStyle = 'black';
         c.fillRect(0,0, canvas.width, canvas.height);
-        c.font = '13px monospace';
+        c.font = '11px monospace';
         c.fillStyle = 'white';
-        const motto = "You are a conqueror because you conquer yourself, your demons. Most of them couldn't conquer their demons.";
+        const motto = "You are a conqueror because you conquer yourself, your demons.";
+        const motto2 = "Most of them couldn't conquer their demons."
         const slogan = "Maximize fun.";
+        const slogan2 = "Made to live for 100+ years.";
         const pressanykey ="[press any key]";
-        c.fillText(motto,(canvas.width/2) - (c.measureText(motto).width/2),canvas.height/2);
+        c.fillText(motto,(canvas.width/2) - (c.measureText(motto).width/2),-30 + canvas.height/2);
+        c.fillText(motto2,(canvas.width/2) - (c.measureText(motto2).width/2), canvas.height/2);
         c.fillText(slogan,(canvas.width/2) - (c.measureText(slogan).width/2),30 + canvas.height/2);
-        c.fillText(pressanykey,(canvas.width/2) - (c.measureText(pressanykey).width/2),60 + canvas.height/2);
+        c.fillText(slogan2,(canvas.width/2) - (c.measureText(slogan2).width/2),60 + canvas.height/2);
+        c.fillText(pressanykey,(canvas.width/2) - (c.measureText(pressanykey).width/2),90 + canvas.height/2);
     }
     else if(state == 1) { // load bots
         populate();
@@ -181,11 +185,11 @@ function drawStats() {
     c.fillStyle = 'black';
     c.fillRect(0,0,270,600);
 
-    c.font = '13px monospace';
+    c.font = '11px monospace';
     c.fillStyle = 'white';
 
     for(let i = 0; i < demons.length; i++) {
-        c.fillText(i + " " + (alive[i] ? "active" : "rip") + " " + direction[i] + " " + Math.round(position[i]*10)/10 + " " + action[i] + ((i == demons_turn) ? " <-" : ""), 50, 50 + (i*70));
+        c.fillText(i + " " + (alive[i] ? "active" : "rip") + " " + direction[i] + " " + Math.round(position[i]*10)/10 + " " + ((action[i] == null) ? '-' : action[i]) + ((i == demons_turn) ? " <-" : ""), 50, 50 + (i*70));
         c.fillText("H: " + demons[i].h.health + " L: " + demons[i].l.health + " R: " + demons[i].r.health + " B: " + demons[i].b.health, 50, 70 + (i*70));
         c.fillText("latk: " + demons[i].l.atk + " ratk: " + demons[i].r.atk + " spe: " + demons[i].b.speed, 50, 90 + (i*70));
     }
@@ -196,12 +200,12 @@ function drawLogs() {
     c.fillStyle = 'black';
     c.fillRect(0,600,270, canvas.height-600);
 
-    c.font = '13px monospace';
+    c.font = '11px monospace';
     c.fillStyle = 'white';
 
     j = 0;
     for(var i = ((logs.length - 10 >= 0) ? logs.length-10 : 0); i < logs.length; i++) {
-        c.fillText(logs[i], 50, 700 + (j*20));
+        c.fillText(logs[i], 50, 500 + (j*20));
         j++;
     }
 }
@@ -229,7 +233,7 @@ function populate() {
 function drawState() {
 
     c.fillStyle = 'black';
-    c.fillRect(270,0,80,600);
+    c.fillRect(270,0,80,500);
 
     for(let i = 0; i< demons.length; i++) {    
         if(demons[i].h.health > 0) { c.fillStyle = 'green';}
@@ -250,7 +254,7 @@ function drawState() {
 function drawPosition() {
     c.fillStyle = 'black';
     c.fillRect(350,0, canvas.width-350, canvas.height);
-    c.font = '13px monospace';
+    c.font = '11px monospace';
     c.fillStyle = 'white';
 
     for(let i = 0; i < demons.length; i++) {
@@ -261,10 +265,10 @@ function drawPosition() {
     let in_pos = true;
 
     for(let i = 0; i < demons.length; i++) {    
-        let road = 'o' + "-".repeat(98) + 'x';
+        let road = 'o' + "-".repeat(99) + 'x';
         if(alive[i]) {
             
-            console.log(i,visual_direction[i], visual_position[i], position[i], direction[i], "inpos", in_pos);
+            console.log(i,visual_direction[i], visual_position[i], position[i], Math.round(position[i]), direction[i], "inpos", in_pos);
 
             if(visual_position[i] == position[i]) {
                 let road_mod = road.substring(0, Math.round(position[i])) + (direction[i] ? '>' : '<') + road.substring(Math.round(position[i]) + 1);
