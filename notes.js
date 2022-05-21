@@ -17,7 +17,7 @@ let b0000000002 = ["Feet Don't", "r", 1, 1]; // Fail Me Now...
 // elon
 let h0000000004 = ["42", "h", 1, 1]; // engineering tech, maybe the most powerful ult in the game
 let l0000000004 = ["Flat Mars Society", "b", 1, 1]; //
-let r0000000004 = ["Rage Against The Machine", "l", 1, 1]; // one time use, glass cannon, ancient gear soldier, tim duncan tattoo (chronograph)
+let r0000000004 = ["Eating Glass", "l", 1, 1]; // one time use, glass cannon, ancient gear soldier, tim duncan tattoo (chronograph)
 let b0000000004 = ["The Void", "r", 1, 1];
 
 // the beast
@@ -25,6 +25,7 @@ let b0000000004 = ["The Void", "r", 1, 1];
 
 // coder
 // carmack
+// rage against the machine
 
 // alexander the great (centaur)
 
