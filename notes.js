@@ -1,6 +1,4 @@
 // TODO
-// have to implement game overs
-// have to debug gameplay, especially for ties
 // implement timeouts
 // login system
 // credentials to prevent hacking
@@ -50,7 +48,7 @@ let b0000000004 = ["The Void", "r", 1, 1];
 
 // alexander the great (centaur)
 // indominable will
-// ho
+// 40% rule
 // the meek
 
 // the ant & the grasshopper
@@ -63,3 +61,5 @@ let b0000000004 = ["The Void", "r", 1, 1];
 
 // the stronger the light, the darker the shadows
 //  no one can judge your heart or knows your story
+
+// 2 dogs caged

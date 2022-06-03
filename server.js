@@ -31,16 +31,23 @@ io.sockets.on('connection', function(socket) {
         }
         console.log(user.username, user.id, "has joined the server.");
         players.set(username, socket.id);
-        inventory.set(username, ["h0000001","l0000001","r0000002","b0000001","h0000001","l0000001","r0000002","b0000001","h0000001","l0000001","r0000002","b0000001"]); //BUG: make 5 player, test tie mechanics
+        inventory.set(username, ["h0000001","l0000001","r0000002","b0000001",
+                                 "h0000001","l0000001","r0000002","b0000001",
+                                 "h0000001","l0000001","r0000002","b0000001"
+                                ]); //BUG: make 5 player, test tie mechanics
         io.emit("new user", players);
     });
 
     socket.on('game_type', function(data){
         console.log(data.user, data.game_mode);
         if(data.game_mode == '1') {
-            let temp = ["h0000001","l0000001","r0000002","b0000001","h0000001","l0000001","r0000002","b0000001","h0000001","l0000001","r0000002","b0000001"];
+            let temp = ["h0000001","l0000001","r0000002","b0000001",
+                        "h0000001","l0000001","r0000002","b0000001",
+                        "h0000001","l0000001","r0000002","b0000001"
+                        ];
             games.push({ //eventually add stats
                 gid: game_count, 
+                game_on: true,
                 t: [populate(inventory.get(data.user)), populate(temp)], 
                 t_name: [data.user, "bot"],
                 socket_ids: [socket.id, "bot"],
@@ -71,7 +78,6 @@ io.sockets.on('connection', function(socket) {
                 io.emit('act_update', {action:[data.player_idx,data.demons_turn,'l']});
 
                 while(move(data.gid)) {simulate(data.gid);} 
-                //socket.emit('load_state', games[data.gid]);
             }
             else if(data.action == 'r') {
                 games[data.gid].action[data.player_idx][data.demons_turn] = 'r';
@@ -80,7 +86,21 @@ io.sockets.on('connection', function(socket) {
                 io.emit('act_update', {action:[data.player_idx,data.demons_turn,'r']});
 
                 while(move(data.gid)) {simulate(data.gid);}
-                //socket.emit('load_state', games[data.gid]);
+            }
+
+            // game over check
+            for(let i = 0; i < games[data.gid].t.length; i++) {
+                let game_over_check = true;
+                for(let j = 0; j < games[data.gid].t[i].length; j++) {
+                    if(games[data.gid].t[i][j].h.health > 0) {
+                        game_over_check = false;
+                        break;
+                    }
+                }
+                if(game_over_check == true) {
+                    io.emit('game_over', {game:false});
+                    break;
+                }
             }
         }
     });
@@ -91,7 +111,6 @@ var demon = require('./demon.js');
 
 // will move all demons (if none are in wait-for-input/ready-to-attack position), returns false if we are waiting for input
 function move(gid) {
-
     if(games[gid].game_on == 0) {return false;}
 
     // if we are waiting for input for someone who isn't a bot, return false (stopping simulation loop)
@@ -100,6 +119,7 @@ function move(gid) {
             for(let j = 0; j < games[gid].position[i].length; j++) {
                 if(games[gid].t[i][j].h.health>0) {
                     if((games[gid].position[i][j] <= 0) && (games[gid].direction[i][j] == 0) && (games[gid].action[i][j] == null)) {
+                        console.log("returned false b/c waiting for input", games[gid].position[i][j], games[gid].direction[i][j], games[gid].action[i][j]);
                         return false;
                     }
                 }
@@ -126,7 +146,8 @@ function move(gid) {
             else if(games[gid].direction[i][j] == 0) {games[gid].position[i][j] -= precisionRound(games[gid].t[i][j].b.speed*lowest_multiple,10);}
             else if(games[gid].direction[i][j] == 1) {games[gid].position[i][j] += precisionRound(games[gid].t[i][j].b.speed*lowest_multiple,10);}
 
-            if(games[gid].position[i][j]<0.000000001) {games[gid].position[i][j]=0;} //weird floating point glitch
+            // get rid of any weird floating point glitches
+            if(games[gid].position[i][j]<0.000000001) {games[gid].position[i][j]=0;} 
             if(games[gid].position[i][j]>99.999999999) {games[gid].position[i][j]=100;} 
 
             console.log(i,j,"pos",games[gid].position[i][j],"dir",games[gid].direction[i][j]);
@@ -180,7 +201,6 @@ function simulate(gid) {
                             attacked = true;
                         }
                     }
-                    
                 }
             }
         }
@@ -219,7 +239,7 @@ function simulate(gid) {
         opponents_sorted = opponents_sorted.sort(function(a,b){return b[0]-a[0];});
         console.log("opponents_sorted", opponents_sorted);
 
-        // iterate through all attackers on this team, choose opponent and attack, remove dead opponents from target list 
+        // iterate through all attackers on this team, choose opponent and attack, remove dead opponents from target list, order doesn't need to be randomized for stimulaneous attacks
         for(let j = 0; j < attackers[i].length; j++) {
             if(opponents_size > 0) {
                 let chosen_opponent = Math.floor(Math.random() * opponents_sorted[0][1].length); // pick random opponent of closest array
@@ -268,7 +288,7 @@ function simulate(gid) {
         if(actioners[i].length > 0) {
             if(games[gid].socket_ids[i] == "bot") {
                 for(let j = 0; j < actioners[i].length; j++) {
-                    console.log("set bot direction to 1");
+                    console.log("set bot action & direction to 1");
                     if(games[gid].t[i][actioners[i][j]].r.health > 0){
                         games[gid].action[i][actioners[i][j]] = 'r';
                         games[gid].action_history.push([i,actioners[i][j],'r']); // of the form player_idx, unit_idx, action
