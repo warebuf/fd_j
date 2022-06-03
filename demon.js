@@ -7,113 +7,110 @@ class demon {
         this.alive = true;
     }
     
-    dmg_replay = function(atk, list) {
-        let history = [];
-        for(let i = 0; i < list.length; i++) {
-            if(list[i] == 'h') {
-                history.push('h');
-                if(atk > this.h.health) {
-                    atk = atk - this.h.health;
+    dmg_replay = function(atk,list) { // dmg replay
+        let tot_atk = atk;
+        for(let i=0;i<list.length;i++){
+            if(list[i]=='h'){
+                if(tot_atk > this.h.health) {
+                    tot_atk = tot_atk - this.h.health;
                     this.h.health = 0;
                 }
                 else {
-                    this.h.health -= atk;
-                    atk = 0;
+                    this.h.health -= tot_atk;
+                    tot_atk = 0;
                 }
+                if(this.h.health <= 0) {this.alive = false;}
             }
             else if(list[i] == 'l') {
-                history.push('l');
-                if(atk > this.l.health) {
-                    atk = atk - this.l.health;
+                if(tot_atk > this.l.health) {
+                    tot_atk = tot_atk - this.l.health;
                     this.l.health = 0;
                 }
                 else {
-                    this.l.health -= atk;
-                    atk = 0;
+                    this.l.health -= tot_atk;
+                    tot_atk = 0;
                 }
             }
             else if(list[i] == 'r') {
-                history.push('r');
-                if(atk > this.r.health) {
-                    atk = atk - this.r.health;
+                if(tot_atk > this.r.health) {
+                    tot_atk = tot_atk - this.r.health;
                     this.r.health = 0;
                 }
                 else {
-                    this.r.health -= atk;
-                    atk = 0;
+                    this.r.health -= tot_atk;
+                    tot_atk = 0;
                 }
             }
             else if(list[i] == 'b') {
-                history.push('b');
-                if(atk > this.b.health) {
-                    atk = atk - this.b.health;
+                if(tot_atk > this.b.health) {
+                    tot_atk = tot_atk - this.b.health;
                     this.b.health = 0;
                 }
                 else {
-                    this.b.health -= atk;
-                    atk = 0;
+                    this.b.health -= tot_atk;
+                    tot_atk = 0;
                 }
             }
         }
-        return history;
     }
 
-    dmg = function(atker, dfner, atk, part, chain) { // enable chain hits
+    dmg = function(atker, defer, atk, part, chain) { // enable chain hits
         let history = [];
-        while( (atk > 0) && (this.alive) ) {
-            console.log(atker, dfner, "atk:", atk, "part:",part);
+        let tot_atk = atk;
+        while( (tot_atk > 0) && (this.alive) ) {
+            //console.log(atker, defer, "atk:", tot_atk, "part:",part);
             if((part == 0 && this.h.health <= 0) || (part == 1 && this.l.health <= 0) || (part == 2 && this.r.health <= 0) || (part == 3 && this.b.health <= 0) ) {part = 4;} 
             if(part == 0) {
-                if(atk > this.h.health) {
+                if(tot_atk > this.h.health) {
                     history.push("h");
-                    if(chain == true) {atk = atk - this.h.health;}
-                    else {atk = 0;}
+                    if(chain == true) {tot_atk = tot_atk - this.h.health;}
+                    else {tot_atk = 0;}
                     this.h.health = 0;
                 }
                 else {
                     history.push("h");
-                    this.h.health = this.h.health - atk;
-                    atk = 0;
+                    this.h.health = this.h.health - tot_atk;
+                    tot_atk = 0;
                 }
                 if(this.h.health <= 0) {this.alive = false;}
             }
             else if(part == 1) {
-                if(atk > this.l.health) {
+                if(tot_atk > this.l.health) {
                     history.push("l");
-                    if(chain == true) {atk = atk - this.l.health;}
-                    else {atk = 0;}
+                    if(chain == true) {tot_atk = tot_atk - this.l.health;}
+                    else {tot_atk = 0;}
                     this.l.health = 0;
                 }
                 else {
                     history.push("l");
-                    this.l.health = this.l.health - atk;
-                    atk = 0;
+                    this.l.health = this.l.health - tot_atk;
+                    tot_atk = 0;
                 }
             }
             else if(part == 2) {
-                if(atk > this.r.health) {
+                if(tot_atk > this.r.health) {
                     history.push("r");
-                    if(chain == true) {atk = atk - this.r.health;}
-                    else {atk = 0;}
+                    if(chain == true) {tot_atk = tot_atk - this.r.health;}
+                    else {tot_atk = 0;}
                     this.r.health = 0;
                 }
                 else {
                     history.push("r");
-                    this.r.health = this.r.health - atk;
-                    atk = 0;
+                    this.r.health = this.r.health - tot_atk;
+                    tot_atk = 0;
                 }
             }
             else if(part == 3) {
-                if(atk > this.b.health) {
+                if(tot_atk > this.b.health) {
                     history.push("b");
-                    if(chain == true) {atk = atk - this.b.health;}
-                    else {atk = 0;}
+                    if(chain == true) {tot_atk = tot_atk - this.b.health;}
+                    else {tot_atk = 0;}
                     this.b.health = 0;
                 }
                 else {
                     history.push("b");
-                    this.b.health = this.b.health - atk;
-                    atk = 0;
+                    this.b.health = this.b.health - tot_atk;
+                    tot_atk = 0;
                 }
             }
             else {part = Math.floor(Math.random()*4);}

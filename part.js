@@ -46,7 +46,7 @@ class part {
             this.speed = Math.floor(Math.random() * 100) + 1;
         }
         else if(id=='b0000002') {
-            this.health = 1;
+            this.health = 2;
             this.speed = 50;
         }
         else if(id=='b0000003') {
