@@ -1,10 +1,13 @@
 // TODO
 // implement timeouts
+
+
+
 // login system
 // credentials to prevent hacking
-
 // reconnect
 // multiplayer (rooms)
+
 // trading
 // inventory select
 // 2d skeletal modelling
@@ -19,6 +22,7 @@
 // implement new parts
 // spectate (if you can record the rng and user input , you can replay the game)
 // mvp
+
 
 
 // doppelganger
@@ -61,5 +65,7 @@ let b0000000004 = ["The Void", "r", 1, 1];
 
 // the stronger the light, the darker the shadows
 //  no one can judge your heart or knows your story
+// the girls only like the boys who can run the fastest
 
 // 2 dogs caged
+// rage against the dying of the light
