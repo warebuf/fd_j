@@ -169,12 +169,11 @@ function animate() { // TODO: might be a better way to organize states (not insi
     else if(state == 12) { // this game state exists because we just don't want to constantly draw
         state = chooseAction();
     }
-    else if(state == 3) {   // we are waiting for an action from our client
-        while(actstate < server_act_his.length) {
+    else if(state == 3) {   // we are waiting for an action from our client, BUG: sometimes can throw a -1 demons_turn
+        if(actstate < server_act_his.length) {
             console.log("(s3) setting client-action for", server_act_his[actstate]);
             if(client_action[server_act_his[actstate][0]][server_act_his[actstate][1]] != null) {
                 console.log("TRIED TO SET ALREADY SET INPUT");
-                break;
             }
             else {
                 client_action[server_act_his[actstate][0]][server_act_his[actstate][1]] = server_act_his[actstate][2];
@@ -183,13 +182,38 @@ function animate() { // TODO: might be a better way to organize states (not insi
                 state = 6;
             }
         }
+
+        let start = Date.now().toLocaleString('en-CH');
+        c.fillStyle = 'green';
+        c.fillRect((canvas.width/2)-(c.measureText(start).width/2),(canvas.height/2)-c.measureText('M').width,c.measureText(start).width,c.measureText('M').width);
+        c.fillStyle = 'white';
+        c.fillText(start,(canvas.width/2) - (c.measureText(start).width/2), canvas.height/2);
+
+        // when you arrive send to the server a 'start timer signal'
+        // cannot execute code unless you recieve a 'start timer signal'
+        // recieve an encrypted key for input, the client says that it has begun the timer
+        // send back user input with encrypted key
+        // if user input w/ encrypted key is not sent in time, server chooses an automated action
+        
+        // loop hole for this is user just turns off internet, unable to send 'start timer signal'
+        // could potentially fake 'start timer signal' from server to unlock code
+
+        // the way hearthstone handles this is to just start the timer after simulation (you can add skip animation functionality)
+
+        // have to change the architecture
+        // instead of the server sending the client future states, and the client loading them in when ready
+        // the client must send the server requests for states, that way we get timestamps for each request
+        // if we know the timestamp between requests, we can calculate how long each state should take
+        // if we know how long each state should take (at maximum), we can calculate by what time an input should come in by
+        // if the input does not come in by then, we automate the action (and maybe do some timeout stuff)
+        // Google : "javascript how to handle timed messages to client without hacking"
+
     }
     else if(state == 4) { // wait for other users action to come in
-        while(actstate < server_act_his.length) {
+        if(actstate < server_act_his.length) {
             console.log("(s4) setting client-action for", server_act_his[actstate]);
             if(client_action[server_act_his[actstate][0]][server_act_his[actstate][1]] != null) { // if for whatever reason, 
                 console.log("TRIED TO SET ALREADY SET INPUT");
-                break;
             }
             else {
                 client_action[server_act_his[actstate][0]][server_act_his[actstate][1]] = server_act_his[actstate][2];
