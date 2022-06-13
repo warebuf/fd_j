@@ -20,6 +20,7 @@ var players = new Map();
 var inventory = new Map();
 var games = [];
 var game_count = 0;
+var timeouts = [];
 
 io.sockets.on('connection', function(socket) {
     console.log(socket.id);
@@ -34,26 +35,46 @@ io.sockets.on('connection', function(socket) {
         inventory.set(username, ["h0000001","l0000001","r0000002","b0000001",
                                  "h0000001","l0000001","r0000002","b0000001",
                                  "h0000001","l0000001","r0000002","b0000001"
-                                ]); //BUG: make 5 player, test tie mechanics
+                                ]); 
         io.emit("new user", players);
     });
 
     socket.on('game_type', function(data){
         console.log(data.user, data.game_mode);
+
         if(data.game_mode == '1') {
+
             let temp = ["h0000001","l0000001","r0000002","b0000001",
                         "h0000001","l0000001","r0000002","b0000001",
                         "h0000001","l0000001","r0000002","b0000001"
                         ];
+
+            let num_units = 3;
+            let num_players = 2;
+
+            let temp_pos = [];
+            let temp_dir = [];
+            let temp_action = [];
+            let temp_timeout = [];
+
+            for(let i = 0; i < num_players; i++) {
+                temp_pos.push(new Array(num_units).fill(0));
+                temp_dir.push(new Array(num_units).fill(0));
+                temp_action.push(new Array(num_units).fill(null));
+                temp_timeout.push(null);
+            }
+
+            timeouts.push(temp_timeout);
+
             games.push({ //eventually add stats
                 gid: game_count, 
                 game_on: true,
                 t: [populate(inventory.get(data.user)), populate(temp)], 
                 t_name: [data.user, "bot"],
                 socket_ids: [socket.id, "bot"],
-                position: [new Array(3).fill(0), new Array(3).fill(0)],
-                direction: [new Array(3).fill(0), new Array(3).fill(0)],
-                action: [new Array(3).fill(null), new Array(3).fill(null)],
+                position: temp_pos,
+                direction: temp_dir,
+                action: temp_action,
                 log: [], //of the form [turn,[atki,atkj],[defi,defj],action,tot_dmg,[attack_chain]]
                 action_history: [],
                 rec_pos: [], // short for recent_position
@@ -61,9 +82,19 @@ io.sockets.on('connection', function(socket) {
                 game_on: 1,
                 turn: 0
             });
-            simulate(game_count); // fulfill bot actions
+
+            // set timeouts for initial
+
+            for(let i = 0; i < games[game_count].socket_ids.length; i++) {
+                if(games[game_count].socket_ids[i] != "bot") {
+                    console.log("set timeout for", i);
+                    timeouts[game_count][i] = setTimeout(autoplay,20000,game_count,i); //20s
+                }
+            }
+
             socket.emit('load_state', games[game_count]);
             game_count++;
+            
         }
     });
 
@@ -72,34 +103,39 @@ io.sockets.on('connection', function(socket) {
 
         if(games[data.gid].action[data.player_idx][data.demons_turn] == null) {
             if(data.action == 'l') {
+                clearTimeout(timeouts[data.gid][data.player_idx]);
+                timeouts[data.gid][data.player_idx] = null;
+                console.log("cleared timeout for", data.player_idx);
+
                 games[data.gid].action[data.player_idx][data.demons_turn] = 'l';
                 games[data.gid].action_history.push([data.player_idx,data.demons_turn,'l']); // of the form player_idx, unit_idx, action
                 games[data.gid].direction[data.player_idx][data.demons_turn] = 1;
                 io.emit('act_update', {action:[data.player_idx,data.demons_turn,'l']});
 
-                while(move(data.gid)) {simulate(data.gid);} 
+                if(move(data.gid)) {
+                    do {simulate(data.gid);}
+                    while(move(data.gid));
+                }
+                else {
+                    simulate(data.gid);
+                }
             }
             else if(data.action == 'r') {
+                clearTimeout(timeouts[data.gid][data.player_idx]);
+                timeouts[data.gid][data.player_idx] = null;
+                console.log("cleared timeout for", data.player_idx);
+
                 games[data.gid].action[data.player_idx][data.demons_turn] = 'r';
                 games[data.gid].action_history.push([data.player_idx,data.demons_turn,'r']); // of the form player_idx, unit_idx, action
                 games[data.gid].direction[data.player_idx][data.demons_turn] = 1;
                 io.emit('act_update', {action:[data.player_idx,data.demons_turn,'r']});
 
-                while(move(data.gid)) {simulate(data.gid);}
-            }
-
-            // game over check
-            for(let i = 0; i < games[data.gid].t.length; i++) {
-                let game_over_check = true;
-                for(let j = 0; j < games[data.gid].t[i].length; j++) {
-                    if(games[data.gid].t[i][j].h.health > 0) {
-                        game_over_check = false;
-                        break;
-                    }
+                if(move(data.gid)) {
+                    do {simulate(data.gid);}
+                    while(move(data.gid));
                 }
-                if(game_over_check == true) {
-                    io.emit('game_over', {game:false});
-                    break;
+                else {
+                    simulate(data.gid);
                 }
             }
         }
@@ -157,17 +193,19 @@ function move(gid) {
     if(lowest_multiple > 0) {
         io.emit('rec_update', {rec_pos:games[gid].rec_pos, rec_dir:games[gid].rec_dir});
         io.emit('pos_update', {pos:games[gid].position, dir:games[gid].direction});
+        return true;
     }
-
-    return true;
+    else {
+        return false;
+    }
 }
 
 // will find the demons in ask or attack position
 // if in attack position, execute attack
 // if in ask position, either fulfill bot ask or send 'action_req' to users
 function simulate(gid) { 
-    let actioners = new Array();
-    let attackers = new Array(); // each team has an array, each array is filled with ready attackers of thata team
+    let actioners = new Array(); // each team has an array, each array is filled with ready attackers of that team
+    let attackers = new Array(); // each team has an array, each array is filled with ready attackers of that team
 
     let attacked = false;
     for(let i = 0; i < games[gid].t.length; i++) { // find the list of ready attackers and actioners
@@ -277,13 +315,23 @@ function simulate(gid) {
         }
         if(team_dead == true) {
             console.log("gameover");
+            io.emit('game_over', {game:false});
             games[gid].game_on = 0;
+            // TODO: clear up any timeouts if game is over
+
+            for(let j = 0; j < timeouts[gid].length; j++) {
+                if(timeouts[gid][j] != null) {
+                    clearTimeout(timeouts[gid][j]);
+                    timeouts[gid][j] = null;
+                    console.log("cleared timeout for", j);
+                }
+            }
+
             return;
         }
     }
 
-    let actions_left = false;
-    // update which demons need inputs for all clients (with timeout - maybe 30s?), TODO: potential to insert autoplay here
+    // update which demons need inputs for all clients, set timeouts.
     for(let i = 0; i < actioners.length; i++) {
         if(actioners[i].length > 0) {
             if(games[gid].socket_ids[i] == "bot") {
@@ -303,10 +351,9 @@ function simulate(gid) {
                 }
             }
             else {
-                for(let j = 0; j < actioners[i].length; j++) {
-                    if(games[gid].t[i][actioners[i][j]].h.health > 0) {
-                        actions_left = true;
-                    }
+                if( timeouts[gid][i] == null ) {
+                    console.log("set timeout for", i);
+                    timeouts[gid][i] = setTimeout(autoplay,20000,gid,i); //20s
                 }
             }
         }
@@ -319,6 +366,30 @@ function simulate(gid) {
             console.log(i,j,"h",games[gid].t[i][j].h.health,"l",games[gid].t[i][j].l.health,"r",games[gid].t[i][j].r.health,"b",games[gid].t[i][j].b.health );
         }
     }
+}
+
+function autoplay(gid,player_idx) {    
+    console.log("set autoplay action for gid:", gid, "player_idx:",player_idx);
+    for(let i = 0; i < games[gid].action[player_idx].length; i++) {
+        if( (games[gid].position[player_idx][i] <= 0) && (games[gid].direction[player_idx][i] == 0) && (games[gid].action[player_idx][i] == null) && (games[gid].t[player_idx][i].h.health > 0)) {
+            if(games[gid].t[player_idx][i].r.health > 0){
+                games[gid].action[player_idx][i] = 'r';
+                games[gid].action_history.push([player_idx,i,'r']); // of the form player_idx, unit_idx, action
+                io.emit('act_update', {action:[player_idx,i,'r']});
+            }
+            else { // if no moves left, just try to do 'l'
+                games[gid].action[player_idx][i] = 'l';
+                games[gid].action_history.push([player_idx,i,'l']); // of the form player_idx, unit_idx, action
+                io.emit('act_update', {action:[player_idx,i,'l']});
+            }
+            games[gid].direction[player_idx][i] = 1;
+        }
+    }
+
+    timeouts[gid][player_idx] = null;
+    
+    do {simulate(gid);}
+    while(move(gid));
 }
 
 function populate(invent) {
