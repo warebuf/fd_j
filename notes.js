@@ -1,12 +1,11 @@
 // TODO
-// implement timeouts
-
-
 
 // login system
 // credentials to prevent hacking
 // reconnect
 // multiplayer (rooms)
+
+// demon select
 
 // trading
 // inventory select
